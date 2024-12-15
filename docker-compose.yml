@@ -1,0 +1,43 @@
+#version: '3.8'
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: stock_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - stock_data:/var/lib/postgresql/data
+      - ./database/docker-entrypoint-initdb.d/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  backend:
+    build:
+      context: ./backend
+    container_name: backend
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: password
+      DB_NAME: stock_db
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:80"
+    environment:
+      VITE_BACKEND_URL: http://backend:8000
+    depends_on:
+      - backend
+
+volumes:
+  stock_data:
