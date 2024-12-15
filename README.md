@@ -1,2 +1,2 @@
 # afeyagroup
-stock analysis dash board for novice stock investro
+stock analysis dashboard for novice stock investor
