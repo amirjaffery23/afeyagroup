@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { defineProps } from 'vue';
-import type { StockPortfolio } from '@/interfaces/stock.interface';
+import type { StockPortfolio } from '../../interfaces/stock.interface';
 
 const props = defineProps<{
   portfolioData: StockPortfolio[]; // Updated to use the correct prop name and type
