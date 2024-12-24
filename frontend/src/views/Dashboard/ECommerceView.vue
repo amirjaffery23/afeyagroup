@@ -7,6 +7,10 @@ import ChatCard from '@/components/ChatCard.vue'
 import MapOne from '@/components/Maps/MapOne.vue'
 import TableOne from '@/components/Tables/TableOne.vue'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
+import { ref } from 'vue';
+
+const portfolioData = ref([]);
+
 </script>
 
 <template>
@@ -34,7 +38,7 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 
       <!-- ====== Table One Start -->
       <div class="col-span-12 xl:col-span-8">
-        <TableOne />
+        <TableOne :portfolioData="portfolioData" />
       </div>
       <!-- ====== Table One End -->
 
