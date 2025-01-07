@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from "vue";
 
 const cardItems = ref([
   {
@@ -20,9 +20,9 @@ const cardItems = ref([
             fill=""
           />
         </svg>`,
-    title: 'Total views',
-    total: '$3.456K',
-    growthRate: 0.43
+    title: "Total views",
+    total: "$3.456K",
+    growthRate: 0.43,
   },
   {
     icon: `<svg
@@ -46,9 +46,9 @@ const cardItems = ref([
               fill=""
             />
           </svg>`,
-    title: 'Total Profit',
-    total: '$45,2K',
-    growthRate: 4.35
+    title: "Total Profit",
+    total: "$45,2K",
+    growthRate: 4.35,
   },
   {
     icon: `<svg
@@ -68,9 +68,9 @@ const cardItems = ref([
               fill=""
             />
           </svg>`,
-    title: 'Total Product',
-    total: '2.450',
-    growthRate: 2.59
+    title: "Total Product",
+    total: "2.450",
+    growthRate: 2.59,
   },
   {
     icon: `<svg
@@ -94,11 +94,11 @@ const cardItems = ref([
               fill=""
             />
           </svg>`,
-    title: 'Total Users',
-    total: '3.456',
-    growthRate: -0.95
-  }
-])
+    title: "Total Users",
+    total: "3.456",
+    growthRate: -0.95,
+  },
+]);
 </script>
 
 <template>
@@ -115,13 +115,18 @@ const cardItems = ref([
 
     <div class="mt-4 flex items-end justify-between">
       <div>
-        <h4 class="text-title-md font-bold text-black dark:text-white">{{ item.total }}</h4>
+        <h4 class="text-title-md font-bold text-black dark:text-white">
+          {{ item.total }}
+        </h4>
         <span class="text-sm font-medium">{{ item.title }}</span>
       </div>
 
       <span
         class="flex items-center gap-1 text-sm font-medium"
-        :class="{ 'text-meta-3': item.growthRate > 0, 'text-meta-5': item.growthRate < 0 }"
+        :class="{
+          'text-meta-3': item.growthRate > 0,
+          'text-meta-5': item.growthRate < 0,
+        }"
       >
         {{ item.growthRate }}%
         <svg

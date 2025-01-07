@@ -1,21 +1,22 @@
 <script setup lang="ts">
-import DataStatsOne from '@/components/DataStats/DataStatsOne.vue'
-import ChartOne from '@/components/Charts/ChartOne.vue'
-import ChartThree from '@/components/Charts/ChartThree.vue'
-import ChartTwo from '@/components/Charts/ChartTwo.vue'
-import ChatCard from '@/components/ChatCard.vue'
-import MapOne from '@/components/Maps/MapOne.vue'
-import TableOne from '@/components/Tables/TableOne.vue'
-import DefaultLayout from '@/layouts/DefaultLayout.vue'
-import { ref } from 'vue';
+import DataStatsOne from "@/components/DataStats/DataStatsOne.vue";
+import ChartOne from "@/components/Charts/ChartOne.vue";
+import ChartThree from "@/components/Charts/ChartThree.vue";
+import ChartTwo from "@/components/Charts/ChartTwo.vue";
+import ChatCard from "@/components/ChatCard.vue";
+import MapOne from "@/components/Maps/MapOne.vue";
+import TableOne from "@/components/Tables/TableOne.vue";
+import DefaultLayout from "@/layouts/DefaultLayout.vue";
+import { ref } from "vue";
 
 const portfolioData = ref([]);
-
 </script>
 
 <template>
   <DefaultLayout>
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5">
+    <div
+      class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5"
+    >
       <DataStatsOne />
     </div>
 
