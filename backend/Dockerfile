@@ -1,6 +1,28 @@
 FROM python:3.11-slim
+
+# Set the working directory
 WORKDIR /app
+
+# Install system dependencies including librdkafka
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libc-dev \
+    libssl-dev \
+    libz-dev \
+    librdkafka-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the requirements file
 COPY requirements.txt requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Upgrade pip and install Python dependencies
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+
+# Copy the application code
 COPY . .
+
+# Set environment variables
+ENV KAFKA_BROKER=kafka:9092
+
+# Command to run the application
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

@@ -5,4 +5,6 @@ sqlalchemy
 pydantic
 passlib
 email-validator
+confluent-kafka==1.9.2
+uvicorn==0.22.0
 
