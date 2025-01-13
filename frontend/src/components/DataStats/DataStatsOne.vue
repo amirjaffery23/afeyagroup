@@ -1,7 +1,11 @@
 <template>
   <div class="cards-container">
     <!-- Card Item Start -->
-    <transition-group name="card-move" tag="div" class="flex flex-nowrap gap-4">
+    <transition-group
+      name="card-move"
+      tag="div"
+      class="d-flex justify-content-start flex-row gap-4"
+    >
       <div
         v-for="(item, index) in cardItems"
         :key="item.id"
@@ -11,17 +15,17 @@
         @dragover.prevent
         @drop="onDrop(index)"
       >
-        <div
+        <!-- <div
           class="flex h-11.5 w-11.5 items-center justify-center rounded-full bg-meta-2 dark:bg-meta-4"
           v-html="item.icon"
-        ></div>
+        ></div> -->
 
-        <div class="mt-4 flex items-end justify-between">
+        <!-- <div class="mt-4 d-flex items-end justify-between">
           <div>
             <h4 class="text-title-md font-bold text-black dark:text-white">
-              {{ item.total }}
+              {{ item.title }}
             </h4>
-            <span class="text-sm font-medium">{{ item.title }}</span>
+            <span class="text-sm font-medium">{{ item.total }}</span>
           </div>
 
           <span
@@ -62,7 +66,7 @@
               />
             </svg>
           </span>
-        </div>
+        </div> -->
       </div>
     </transition-group>
     <!-- Card Item End -->
@@ -76,23 +80,30 @@ export default {
       cardItems: [
         {
           id: 1,
-          icon: "⭐", // Replace with your SVG/icon
+          icon: "📈", // Replace with your SVG/icon
           total: "100",
-          title: "Card 1",
+          title: "S&P 500",
           growthRate: 5,
         },
         {
           id: 2,
-          icon: "🔥",
+          icon: "📈",
           total: "200",
-          title: "Card 2",
+          title: "Nasdaq",
           growthRate: -3,
         },
         {
           id: 3,
           icon: "📈",
           total: "300",
-          title: "Card 3",
+          title: "Dow Jones",
+          growthRate: 10,
+        },
+        {
+          id: 4,
+          icon: "📈",
+          total: "400",
+          title: "Russell 2000",
           growthRate: 10,
         },
       ],
