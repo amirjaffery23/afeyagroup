@@ -38,7 +38,7 @@ services:
       VITE_BACKEND_URL: http://backend:8000
     depends_on:
       - backend
-  
+
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     container_name: zookeeper
@@ -63,6 +63,17 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     ports:
       - "9092:9092"
+
+  websockets-server:
+    build:
+      context: /home/amir/projects/afeyagroup/backend
+      dockerfile: Dockerfile
+    container_name: websockets-server
+    command: ["python", "websockets-server.py"]
+    ports:
+      - "8080:8000"
+    depends_on:
+      - backend
 
 volumes:
   stock_data:
