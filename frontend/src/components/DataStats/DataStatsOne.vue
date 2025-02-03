@@ -102,27 +102,19 @@ const cardItems = ref([
 let ws: WebSocket;
 
 const initializeWebSocket = () => {
-  ws = new WebSocket("ws://localhost:8080/realtime-updates");
+  ws = new WebSocket("ws://localhost:8000/ws");
 
   ws.onopen = () => {
     console.log("WebSocket connected");
-    ws.send(JSON.stringify({ action: "subscribe", topics: ["market-updates"] }));
   };
 
   ws.onmessage = (event) => {
     try {
-      // Remove prefix (if any) before parsing
-      const rawData = event.data;
-      const jsonData = rawData.startsWith("Echo:") ? rawData.slice(5).trim() : rawData;
+      const data = JSON.parse(event.data);
 
-      // Parse the sanitized JSON string
-      const data = JSON.parse(jsonData);
-
-      // Process data if topic matches "market-updates"
-      if (data.topic === "market-updates") {
-        // Update relevant card item based on received data
+      if (data) {
         const updatedItems = cardItems.value.map((item) => {
-          if (item.total === data.total) {
+          if (item.total.includes(data.symbol)) {
             return {
               ...item,
               points: data.points,
@@ -134,16 +126,12 @@ const initializeWebSocket = () => {
         cardItems.value = updatedItems;
       }
     } catch (error) {
-      console.error("Failed to process WebSocket message:", error, event.data);
+      console.error("Failed to process WebSocket message:", error);
     }
   };
 
   ws.onclose = () => {
     console.log("WebSocket disconnected");
-  };
-
-  ws.onerror = (error) => {
-    console.error("WebSocket error:", error);
   };
 };
 
