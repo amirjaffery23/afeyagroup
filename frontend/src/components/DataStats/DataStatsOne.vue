@@ -102,7 +102,7 @@ const cardItems = ref([
 let ws: WebSocket;
 
 const initializeWebSocket = () => {
-  ws = new WebSocket("ws://localhost:8000/ws");
+  ws = new WebSocket("ws://websockets_server:8001/ws");
 
   ws.onopen = () => {
     console.log("WebSocket connected");
@@ -126,12 +126,16 @@ const initializeWebSocket = () => {
         cardItems.value = updatedItems;
       }
     } catch (error) {
-      console.error("Failed to process WebSocket message:", error);
+      console.error("Error parsing WebSocket message:", error);
     }
   };
 
+  ws.onerror = (error) => {
+    console.error("WebSocket error:", error);
+  };
+
   ws.onclose = () => {
-    console.log("WebSocket disconnected");
+    console.log("WebSocket connection closed");
   };
 };
 

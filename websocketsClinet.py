@@ -1,21 +1,14 @@
 import asyncio
 import websockets
 
-async def client():
-    uri = "ws://localhost:8000"
-    async with websockets.connect(uri) as websocket:
-        # Send client ID
-        await websocket.send("microservice_1")
+async def test_websocket():
+    uri = "ws://localhost:8080"  # Replace with your server's URI
+    try:
+        async with websockets.connect(uri, open_timeout=10) as websocket:
+            print("Connected to WebSocket server")
+            # Add your communication logic here
+    except Exception as e:
+        print(f"Connection failed: {e}")
 
-        # Subscribe to a topic
-        await websocket.send('{"action": "subscribe", "topic": "news"}')
+asyncio.run(test_websocket())
 
-        # Send a message to the topic
-        await websocket.send('{"action": "send", "topic": "news", "message": "Hello, subscribers!"}')
-
-        # Receive messages
-        while True:
-            response = await websocket.recv()
-            print(f"Received: {response}")
-
-asyncio.run(client())

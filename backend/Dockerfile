@@ -25,4 +25,5 @@ COPY . .
 ENV KAFKA_BROKER=kafka:9092
 
 # Command to run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["sh", "-c", "if [ \"$RUN_WEBSOCKETS\" = 'true' ]; then uvicorn websockets_server:app --host 0.0.0.0 --port 8001 --reload; else uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload; fi"]
+

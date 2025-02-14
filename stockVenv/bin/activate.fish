@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV /home/amir/projects/vue-tailwind-admin-dashboard/stockVenv
+set -gx VIRTUAL_ENV /home/amir/projects/afeyagroup/stockVenv
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"bin $PATH

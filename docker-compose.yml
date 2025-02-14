@@ -1,4 +1,5 @@
-#version: '3.8'
+#version: "3.8"
+
 services:
   postgres:
     image: postgres:16
@@ -12,21 +13,31 @@ services:
     volumes:
       - stock_data:/var/lib/postgresql/data
       - ./database/docker-entrypoint-initdb.d/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app_network  # Fixed: Added network connection
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - app_network
 
   backend:
     build:
       context: ./backend
     container_name: backend
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: password
-      DB_NAME: stock_db
+    env_file:
+      - .env  # Single source of truth for environment variables
     ports:
       - "8000:8000"
     depends_on:
       - postgres
+      - redis
+    networks:
+      - app_network
 
   frontend:
     build:
@@ -35,9 +46,11 @@ services:
     ports:
       - "3000:80"
     environment:
-      VITE_BACKEND_URL: http://backend:8000
+      VITE_BACKEND_URL: http://localhost:8000  # Fixed: Accessible from browser
     depends_on:
       - backend
+    networks:
+      - app_network
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -47,6 +60,8 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+    networks:
+      - app_network
 
   kafka:
     image: confluentinc/cp-kafka:latest
@@ -60,20 +75,40 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"  # 🔥 Add this line
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      retries: 5
+      start_period: 20s
     ports:
       - "9092:9092"
+    networks:
+      - app_network
 
-  websockets-server:
+  websockets_server:
     build:
-      context: /home/amir/projects/afeyagroup/backend
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: websockets-server
-    command: ["python", "websockets-server.py"]
+    container_name: websockets_server
+    environment:
+      - RUN_WEBSOCKETS=true  # ✅ This tells the container to run WebSockets
+    command: ["uvicorn", "websockets_server:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]  # Fixed: Underscore & port
     ports:
-      - "8080:8000"
+      - "8080:8001"  # Fixed: No port conflict
     depends_on:
-      - backend
+      kafka:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    networks:
+      - app_network
 
 volumes:
   stock_data:
+
+networks:
+  app_network:
+    name: app_network  # ✅ Forces Docker to use this name instead of afeyagroup_app_network
+    driver: bridge

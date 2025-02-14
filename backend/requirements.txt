@@ -8,5 +8,7 @@ email-validator
 confluent-kafka==1.9.2
 uvicorn==0.22.0
 websockets
-
-
+kafka-python
+redis>=4.3.0
+fastapi-limiter
+aiokafka
