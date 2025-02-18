@@ -24,6 +24,9 @@ COPY . .
 # Set environment variables
 ENV KAFKA_BROKER=kafka:9092
 
+# Ensure finnhub_producer.py is executable
+RUN chmod +x app/finnhub_producer.py
+
 # Command to run the application
 CMD ["sh", "-c", "if [ \"$RUN_WEBSOCKETS\" = 'true' ]; then uvicorn websockets_server:app --host 0.0.0.0 --port 8001 --reload; else uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload; fi"]
 

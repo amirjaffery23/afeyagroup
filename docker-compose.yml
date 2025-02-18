@@ -104,6 +104,19 @@ services:
         condition: service_started
     networks:
       - app_network
+  
+  finnhub_producer:
+    build:
+      context: ./backend
+    container_name: finnhub_producer
+    environment:
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    command: ["python", "finnhub_producer.py"]
+    depends_on:
+      - kafka
+    networks:
+      - app_network
 
 volumes:
   stock_data:

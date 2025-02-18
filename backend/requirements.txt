@@ -12,3 +12,4 @@ kafka-python
 redis>=4.3.0
 fastapi-limiter
 aiokafka
+finnhub-python
