@@ -102,13 +102,14 @@ const cardItems = ref([
 let ws: WebSocket;
 
 const initializeWebSocket = () => {
-  ws = new WebSocket("ws://websockets_server:8001/ws");
+  ws = new WebSocket("ws://localhost:8080/ws");
 
   ws.onopen = () => {
     console.log("WebSocket connected");
   };
 
   ws.onmessage = (event) => {
+    console.log("Message received:", event.data);
     try {
       const data = JSON.parse(event.data);
 

@@ -1,14 +1,13 @@
 import asyncio
 import websockets
 
-async def test_websocket():
-    uri = "ws://localhost:8080"  # Replace with your server's URI
-    try:
-        async with websockets.connect(uri, open_timeout=10) as websocket:
-            print("Connected to WebSocket server")
-            # Add your communication logic here
-    except Exception as e:
-        print(f"Connection failed: {e}")
+async def echo(websocket, path):
+    while True:
+        await websocket.send('{"symbol": "AAPL", "points": 100, "growthRate": 5}')
+        await asyncio.sleep(1)
 
-asyncio.run(test_websocket())
+start_server = websockets.serve(echo, "localhost", 8080)
+
+asyncio.get_event_loop().run_until_complete(start_server)
+asyncio.get_event_loop().run_forever()
 
