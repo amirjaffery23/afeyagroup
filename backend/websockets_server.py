@@ -1,6 +1,7 @@
 import uvicorn
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from aiokafka import AIOKafkaConsumer
+from kafka.admin import KafkaAdminClient, NewTopic  # ✅ Added missing imports
 from contextlib import asynccontextmanager
 import asyncio
 import json
@@ -16,19 +17,29 @@ async def safe_json_deserializer(m):
         print(f"⚠️ Warning: Received non-JSON message: {m}")
         return None  # Return None or a default dict instead of crashing
 
-async def kafka_listener():
-    # Ensure topic exists before starting consumer
+async def ensure_topic():
+    """Ensure that 'market-updates' topic exists before starting the consumer."""
     admin = KafkaAdminClient(bootstrap_servers="kafka:9092")
     try:
-        if "market-updates" not in admin.list_topics():
-            admin.create_topics([NewTopic("market-updates", 1, 1)])
+        topics = admin.list_topics()
+        if "market-updates" not in topics:
+            print("📢 Creating topic 'market-updates'...")
+            admin.create_topics([NewTopic(name="market-updates", num_partitions=1, replication_factor=1)])
+        else:
+            print("✅ Topic 'market-updates' already exists.")
+    except Exception as e:
+        print(f"⚠️ Error managing Kafka topic: {e}")
     finally:
         admin.close()
+
+async def kafka_listener():
     """Kafka consumer using aiokafka to allow async processing."""
+    
+    await ensure_topic()  # ✅ Ensure the topic is created before starting the consumer
+
     consumer = AIOKafkaConsumer(
         "market-updates",
         bootstrap_servers="kafka:9092",
-        allow_auto_create_topics=True,  # 👈 Add this
         value_deserializer=safe_json_deserializer
     )
     await consumer.start()

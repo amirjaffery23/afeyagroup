@@ -1,66 +1,289 @@
 <script setup lang="ts">
-import { defineProps } from 'vue';
-import type { StockPortfolio } from '../../interfaces/stock.interface';
+import { ref, defineProps, computed, watch } from "vue";
+import axios from "axios";
+import type { StockPortfolio } from "../../interfaces/stock.interface";
 
 const props = defineProps<{
-  portfolioData: StockPortfolio[]; // Updated to use the correct prop name and type
+  portfolioData: StockPortfolio[];
   columns?: string[];
 }>();
+
+const showForm = ref(false);
+const showMenu = ref(false);
+const selectedStock = ref<StockPortfolio | null>(null);
+const menuPosition = ref({ x: 0, y: 0 });
+const isUpdating = ref(false);
+const stockForm = ref({
+  stock_name: "",
+  quantity: 0,
+  purchase_price: 0.0,
+  purchase_date: "",
+  stock_symbol: "",
+});
+const stockData = ref(null);
+const errorMessage = ref("");
+const portfolioData = ref<StockPortfolio[]>(props.portfolioData);
+
+// Ensure correct date format
+const formattedPortfolioData = computed(() =>
+  portfolioData.value.map((stock) => ({
+    ...stock,
+    name: stock.name, // ✅ Ensure name is mapped correctly even after deletion
+    purchase_date: new Date(stock.purchase_date).toLocaleDateString(), // Fix date conversion
+  }))
+);
+
+// Watch for changes in props and update portfolioData
+watch(
+  () => props.portfolioData,
+  (newData) => {
+    portfolioData.value = newData;
+  },
+  { deep: true }
+);
+
+const fetchPortfolioData = async () => {
+  try {
+    const response = await axios.get("/api/stocks/");
+    portfolioData.value = response.data;
+  } catch (error) {
+    console.error("Error fetching portfolio data:", error);
+  }
+};
+
+// Handle right-click event to show context menu
+const handleRightClick = (event: MouseEvent, stock: StockPortfolio) => {
+  event.preventDefault();
+  selectedStock.value = stock;
+  menuPosition.value = { x: event.clientX, y: event.clientY };
+  showMenu.value = true;
+};
+
+// Handle adding a new stock
+const addStock = () => {
+  stockForm.value = {
+    stock_name: "",
+    quantity: 0,
+    purchase_price: 0.0,
+    purchase_date: "",
+    stock_symbol: "",
+  };
+  isUpdating.value = false;
+  showForm.value = true;
+};
+
+// Handle Update selection
+const updateStock = () => {
+  if (selectedStock.value) {
+    stockForm.value = {
+      stock_name: selectedStock.value.name,
+      quantity: selectedStock.value.quantity,
+      purchase_price: parseFloat(selectedStock.value.purchase_price.toString()), // ✅ Convert to float
+      purchase_date: new Date(selectedStock.value.purchase_date)
+        .toISOString()
+        .split("T")[0],
+      stock_symbol: selectedStock.value.stock_symbol,
+    };
+    isUpdating.value = true;
+    showForm.value = true;
+  }
+  showMenu.value = false;
+};
+
+// Handle Delete selection
+const deleteStock = async () => {
+  if (!selectedStock.value) return;
+  try {
+    await axios.delete(`/api/stocks/${selectedStock.value.stock_symbol}`);
+    alert("Stock deleted successfully!");
+    await fetchPortfolioData(); // ✅ Refresh table after deletion
+  } catch (error) {
+    console.error("Error deleting stock:", error);
+    errorMessage.value = "Error deleting stock.";
+  }
+  showMenu.value = false;
+};
+
+// Submit stock data to PostgreSQL
+const submitStock = async () => {
+  try {
+    const url = isUpdating.value
+      ? `/api/stocks/${stockForm.value.stock_symbol}`
+      : "/api/stocks/";
+    const method = isUpdating.value ? "put" : "post";
+    // ✅ Log request data to confirm correct field names
+    console.log("Submitting stock:", JSON.stringify(stockForm.value, null, 2));
+    await axios({ method, url, data: stockForm.value });
+    alert(
+      isUpdating.value ? "Stock updated successfully!" : "Stock created successfully!"
+    );
+
+    stockForm.value = {
+      // ✅ Reset form for new entries
+      stock_name: "",
+      quantity: 0,
+      purchase_price: 0.0,
+      purchase_date: "",
+      stock_symbol: "",
+    };
+
+    await fetchPortfolioData(); // ✅ Refresh table with new data
+  } catch (error) {
+    console.error("Error submitting stock:", error);
+    errorMessage.value = "Error submitting stock data.";
+  }
+};
+
+// Handle Cancel selection
+const cancelAction = () => {
+  showMenu.value = false;
+};
 </script>
 
 <template>
   <div class="rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default">
-    <h4 class="mb-6 text-xl font-semibold text-black">Your Stock Portfolio</h4>
+    <div class="flex justify-between items-center mb-4">
+      <h4 class="text-xl font-semibold text-black">Your Stock Portfolio</h4>
+      <button @click="addStock" class="bg-blue-500 text-white px-4 py-2 rounded">
+        Add Stock
+      </button>
+    </div>
 
     <div class="flex flex-col">
-      <!-- Dynamic Column Header -->
-      <div class="grid grid-cols-3 rounded-sm bg-gray-2 sm:grid-cols-5">
-        <div 
-          v-for="(column, index) in props.columns" 
-          :key="index" 
-          class="p-2.5 text-center xl:p-5"
-        >
-          <h5 class="text-sm font-medium uppercase xsm:text-base">
-            {{ column }}
-          </h5>
-        </div>
-      </div>
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Stock Name
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Quantity
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Purchase Price
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Purchase Date
+            </th>
+            <th
+              scope="col"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              Stock Symbol
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr
+            v-for="stock in formattedPortfolioData"
+            :key="stock.stock_symbol"
+            @contextmenu="handleRightClick($event, stock)"
+          >
+            <td class="px-6 py-4 whitespace-nowrap">{{ stock.name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">{{ stock.quantity }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">{{ stock.purchase_price }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">{{ stock.purchase_date }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">{{ stock.stock_symbol }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-      <!-- Stock Rows -->
-      <div
-        v-for="(portfolio, key) in props.portfolioData"
-        :key="key"
-        :class="`grid grid-cols-3 sm:grid-cols-5 ${
-          key === props.portfolioData.length - 1 ? '' : 'border-b border-stroke'
-        }`"
-      >
-        <!-- Portfolio Name and Logo -->
-        <div class="flex items-center gap-3 p-2.5 xl:p-5">
-          <div class="flex-shrink-0">
-            <img :src="portfolio.logo" alt="Portfolio" class="w-10 h-10" />
+    <!-- Context Menu -->
+    <div
+      v-if="showMenu"
+      :style="{ top: menuPosition.y + 'px', left: menuPosition.x + 'px' }"
+      class="absolute bg-white border border-gray-300 shadow-lg rounded"
+    >
+      <ul>
+        <li @click="addStock" class="px-4 py-2 hover:bg-gray-200 cursor-pointer">
+          Add Stock
+        </li>
+        <li @click="updateStock" class="px-4 py-2 hover:bg-gray-200 cursor-pointer">
+          Update
+        </li>
+        <li @click="deleteStock" class="px-4 py-2 hover:bg-gray-200 cursor-pointer">
+          Delete
+        </li>
+        <li @click="cancelAction" class="px-4 py-2 hover:bg-gray-200 cursor-pointer">
+          Cancel
+        </li>
+      </ul>
+    </div>
+
+    <!-- Edit Form Modal -->
+    <div
+      v-if="showForm"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+    >
+      <div class="bg-white p-6 rounded shadow-lg">
+        <h3 class="text-lg font-semibold mb-4">
+          {{ isUpdating ? "Edit Stock" : "Add Stock" }}
+        </h3>
+        <form @submit.prevent="submitStock">
+          <div class="mb-4">
+            <label class="block text-gray-700">Stock Name</label>
+            <input
+              v-model="stockForm.stock_name"
+              class="w-full border border-gray-300 p-2 rounded"
+            />
           </div>
-          <p class="text-black">{{ portfolio.name }}</p>
-        </div>
-
-        <!-- Quantity -->
-        <div class="flex items-center justify-center p-2.5 xl:p-5">
-          <p class="text-black">{{ portfolio.quantity }}</p>
-        </div>
-
-        <!-- Purchase Price -->
-        <div class="flex items-center justify-center p-2.5 xl:p-5">
-          <p class="text-meta-3">${{ portfolio.purchase_price.toFixed(2) }}</p>
-        </div>
-
-        <!-- Purchase Date -->
-        <div class="hidden items-center justify-center p-2.5 sm:flex xl:p-5">
-          <p class="text-black">{{ portfolio.purchase_date.toLocaleDateString() }}</p>
-        </div>
-
-        <!-- Stock Symbol -->
-        <div class="hidden items-center justify-center p-2.5 sm:flex xl:p-5">
-          <p class="text-meta-5">{{ portfolio.stock_symbol }}</p>
-        </div>
+          <div class="mb-4">
+            <label class="block text-gray-700">Quantity</label>
+            <input
+              v-model="stockForm.quantity"
+              type="number"
+              class="w-full border border-gray-300 p-2 rounded"
+            />
+          </div>
+          <div class="mb-4">
+            <label class="block text-gray-700">Purchase Price</label>
+            <input
+              v-model="stockForm.purchase_price"
+              type="number"
+              class="w-full border border-gray-300 p-2 rounded"
+            />
+          </div>
+          <div class="mb-4">
+            <label class="block text-gray-700">Purchase Date</label>
+            <input
+              v-model="stockForm.purchase_date"
+              type="date"
+              class="w-full border border-gray-300 p-2 rounded"
+            />
+          </div>
+          <div class="mb-4">
+            <label class="block text-gray-700">Stock Symbol</label>
+            <input
+              v-model="stockForm.stock_symbol"
+              class="w-full border border-gray-300 p-2 rounded"
+            />
+          </div>
+          <div class="flex justify-end">
+            <button
+              type="button"
+              @click="showForm = false"
+              class="bg-gray-500 text-white px-4 py-2 rounded mr-2"
+            >
+              Cancel
+            </button>
+            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">
+              {{ isUpdating ? "Update" : "Create" }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

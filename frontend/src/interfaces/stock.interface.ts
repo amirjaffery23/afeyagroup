@@ -5,6 +5,6 @@ export interface StockPortfolio {
     stock_symbol: string;
     quantity: number;
     purchase_price: number;
-    purchase_date: Date;
+    purchase_date: string | Date;  // ✅ Allow both types
   }
   
