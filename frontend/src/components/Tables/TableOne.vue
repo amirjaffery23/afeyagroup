@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, defineProps, computed, watch } from "vue";
+import { ref, defineProps, computed, watch, onMounted } from "vue";
 import axios from "axios";
 import type { StockPortfolio } from "../../interfaces/stock.interface";
 
@@ -8,6 +8,15 @@ const props = defineProps<{
   columns?: string[];
 }>();
 
+const columnOrder = ref(
+  props.columns ?? [
+    "Stock Name",
+    "Quantity",
+    "Purchase Price",
+    "Purchase Date",
+    "Stock Symbol",
+  ]
+);
 const showForm = ref(false);
 const showMenu = ref(false);
 const selectedStock = ref<StockPortfolio | null>(null);
@@ -138,6 +147,16 @@ const submitStock = async () => {
 const cancelAction = () => {
   showMenu.value = false;
 };
+
+const dragStart = (event: DragEvent, index: number) => {
+  event.dataTransfer?.setData("text/plain", index.toString());
+};
+
+const drop = (event: DragEvent, index: number) => {
+  const draggedIndex = Number(event.dataTransfer?.getData("text/plain"));
+  const movedItem = columnOrder.value.splice(draggedIndex, 1)[0];
+  columnOrder.value.splice(index, 0, movedItem);
+};
 </script>
 
 <template>
@@ -154,34 +173,15 @@ const cancelAction = () => {
         <thead class="bg-gray-50">
           <tr>
             <th
-              scope="col"
+              v-for="(column, index) in columnOrder"
+              :key="index"
+              draggable="true"
+              @dragstart="dragStart($event, index)"
+              @dragover.prevent
+              @drop="drop($event, index)"
               class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
             >
-              Stock Name
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Quantity
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Purchase Price
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Purchase Date
-            </th>
-            <th
-              scope="col"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-            >
-              Stock Symbol
+              {{ column }}
             </th>
           </tr>
         </thead>
