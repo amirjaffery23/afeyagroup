@@ -27,6 +27,13 @@ ENV KAFKA_BROKER=kafka:9092
 # Ensure finnhub_producer.py is executable
 RUN chmod +x app/finnhub_producer.py
 
+# Ensure finnhub_producer.py is executable
+RUN chmod +x app/polygon_stocks_api.py
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+CMD ["/entrypoint.sh"]
+
 # Command to run the application
-CMD ["sh", "-c", "if [ \"$RUN_WEBSOCKETS\" = 'true' ]; then uvicorn websockets_server:app --host 0.0.0.0 --port 8001 --reload; else uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload; fi"]
+#CMD ["sh", "-c", "if [ \"$RUN_WEBSOCKETS\" = 'true' ]; then uvicorn websockets_server:app --host 0.0.0.0 --port 8001 --reload; else uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload; fi"]
 

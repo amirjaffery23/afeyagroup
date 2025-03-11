@@ -135,6 +135,22 @@ services:
     networks:
       - app_network
 
+  polygon_stocks_api:
+    build:
+      context: ./backend
+    container_name: polygon_stocks_api
+    volumes:
+      - ./backend/app:/app
+    environment:
+      - POLYGON_API_KEY=${FINNHUB_API_KEY}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    command: ["python", "/app/polygon_stocks_api.py"]
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - app_network
+
 volumes:
   stock_data:
 
