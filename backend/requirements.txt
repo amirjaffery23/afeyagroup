@@ -1,12 +1,11 @@
 fastapi
-uvicorn
+uvicorn==0.22.0
 psycopg2-binary
 sqlalchemy
 pydantic
 passlib
 email-validator
 confluent-kafka==1.9.2
-uvicorn==0.22.0
 websockets
 kafka-python
 redis>=4.3.0
@@ -14,4 +13,4 @@ fastapi-limiter
 aiokafka
 finnhub-python
 httpx
-dotenv
+python-dotenv
