@@ -134,7 +134,6 @@ services:
         condition: service_healthy
     networks:
       - app_network
-
   polygon_stocks_api:
     build:
       context: ./backend
@@ -142,7 +141,7 @@ services:
     volumes:
       - ./backend/app:/app
     environment:
-      - POLYGON_API_KEY=${FINNHUB_API_KEY}
+      - POLYGON_API_KEY=${POLYGON_API_KEY}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     command: ["python", "/app/polygon_stocks_api.py"]
     depends_on:
@@ -150,6 +149,8 @@ services:
         condition: service_healthy
     networks:
       - app_network
+    ports:
+      - "8088:8080"  # ✅ Ensure correct port mapping
 
 volumes:
   stock_data:
