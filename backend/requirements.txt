@@ -14,3 +14,4 @@ aiokafka
 finnhub-python
 httpx
 python-dotenv
+asyncpg
