@@ -4,6 +4,18 @@ from app.db import Base
 from passlib.hash import bcrypt
 from pydantic import BaseModel, EmailStr
 
+class HistoricalStockData(Base):
+    __tablename__ = "historicalstockdata"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    stock_symbol = Column(String(10), nullable=False)
+    date = Column(Date, nullable=False)
+    open_price = Column(Numeric(10, 2), nullable=True)
+    high_price = Column(Numeric(10, 2), nullable=True)
+    low_price = Column(Numeric(10, 2), nullable=True)
+    close_price = Column(Numeric(10, 2), nullable=True)
+    volume = Column(Integer, nullable=True)
+
 class Stock(Base):
     __tablename__ = "allstock"
 
@@ -13,7 +25,6 @@ class Stock(Base):
     quantity = Column(Integer, nullable=False)
     purchase_price = Column(Numeric(10, 2), nullable=False)
     purchase_date = Column(Date, nullable=False)
-
 
 class User(Base):
     __tablename__ = "users"
@@ -32,4 +43,3 @@ class User(Base):
     def verify_password(self, plain_password: str) -> bool:
         """Verifies a plain text password against the hashed password."""
         return bcrypt.verify(plain_password, self.password)
-

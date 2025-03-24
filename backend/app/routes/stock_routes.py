@@ -4,6 +4,7 @@ from typing import List, Optional
 from app.db import get_db
 from app.models import Stock
 from app.schemas.stock import StockCreate, StockUpdate, StockResponse
+from datetime import datetime
 
 stock_router = APIRouter()
 
@@ -39,6 +40,23 @@ def read_stock(stock_id: int, db: Session = Depends(get_db)):
     Retrieve a stock by its ID.
     """
     stock = db.query(Stock).filter(Stock.id == stock_id).first()
+    if not stock:
+        raise HTTPException(status_code=404, detail="Stock not found")
+    return stock
+
+@stock_router.get("/stocks/symbol/{stock_symbol}", response_model=StockResponse)
+def read_stock_by_symbol(stock_symbol: str, date: str, db: Session = Depends(get_db)):
+    """
+    Retrieve a stock by its symbol and date.
+    """
+    # Validate the date format
+    try:
+        date_obj = datetime.strptime(date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+
+    # Query the stock by symbol and date
+    stock = db.query(Stock).filter(Stock.stock_symbol == stock_symbol, Stock.date == date_obj).first()
     if not stock:
         raise HTTPException(status_code=404, detail="Stock not found")
     return stock
