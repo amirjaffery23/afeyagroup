@@ -1,4 +1,4 @@
-#version: "3.8"
+# version: "3.8"
 
 services:
   postgres:
@@ -32,7 +32,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf  # Load custom Nginx config
+      - ./nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - backend
     networks:
@@ -59,7 +59,7 @@ services:
     ports:
       - "3000:80"
     environment:
-      VITE_BACKEND_URL: http://backend:8000  # ✅ Use service name instead of localhost
+      VITE_BACKEND_URL: http://backend:8000
     depends_on:
       - backend
     networks:
@@ -74,13 +74,18 @@ services:
       - "2181:2181"
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD", "zkServer.sh", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Kafka Broker
   kafka:
     image: bitnami/kafka:latest
     container_name: kafka
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     environment:
       KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_CFG_BROKER_ID: 1
@@ -100,16 +105,14 @@ services:
       retries: 5
       start_period: 30s
 
-
-  # WebSockets Server
   websockets_server:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: websockets_server
     environment:
-      - RUN_WEBSOCKETS=true  # ✅ This tells the container to run WebSockets
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092  # ✅ Correct Kafka variable
+      - RUN_WEBSOCKETS=true
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     command: ["uvicorn", "websockets_server:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
     ports:
       - "8080:8001"
@@ -121,7 +124,6 @@ services:
     networks:
       - app_network
 
-  # Finnhub Producer
   finnhub_producer:
     build:
       context: ./backend
@@ -129,6 +131,7 @@ services:
     volumes:
       - ./backend/app:/app
     environment:
+      - RUN_FINNHUB_PRODUCER=true
       - FINNHUB_API_KEY=${FINNHUB_API_KEY}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     command: ["python", "/app/finnhub_producer.py"]
@@ -138,7 +141,6 @@ services:
     networks:
       - app_network
 
-  # Polygon Stocks API
   polygon_stocks_api:
     build:
       context: ./backend
@@ -146,20 +148,21 @@ services:
     volumes:
       - ./backend/app:/app
     environment:
+      - RUN_POLYGON_API=true
       - POLYGON_API_KEY=${POLYGON_API_KEY}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     command: ["python", "/app/polygon_stocks_api.py"]
     depends_on:
       kafka:
         condition: service_healthy
+    ports:
+      - "8088:8080"
     networks:
       - app_network
-    ports:
-      - "8088:8080"  # ✅ Ensure correct port mapping
 
 volumes:
   stock_data:
-  kafka-data:  # ✅ Persistent storage for Kafka
+  kafka-data:
 
 networks:
   app_network:
