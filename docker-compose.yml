@@ -134,7 +134,7 @@ services:
       - RUN_FINNHUB_PRODUCER=true
       - FINNHUB_API_KEY=${FINNHUB_API_KEY}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-    command: ["python", "/app/finnhub_producer.py"]
+    command: ["python", "/app/microservices/finnhub_service/finnhub_producer.py"]
     depends_on:
       kafka:
         condition: service_healthy
@@ -151,7 +151,7 @@ services:
       - RUN_POLYGON_API=true
       - POLYGON_API_KEY=${POLYGON_API_KEY}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-    command: ["python", "/app/polygon_stocks_api.py"]
+    command: ["python", "/app/microservices/polygon_stocks_service/polygon_stocks_api.py"]
     depends_on:
       kafka:
         condition: service_healthy
@@ -159,6 +159,33 @@ services:
       - "8088:8080"
     networks:
       - app_network
+
+  polygon_flatfiles_service:
+    build:
+      context: ./backend
+    container_name: polygon_flatfiles_service
+    volumes:
+      - ./backend/app:/app/app
+    environment:
+      - RUN_POLYGON_FLATFILES=true
+      - POLYGON_ACCESS_KEY_ID=${POLYGON_ACCESS_KEY_ID}
+      - POLYGON_SECRET_ACCESS_KEY=${POLYGON_SECRET_ACCESS_KEY}
+      - POLYGON_S3_ENDPOINT=https://files.polygon.io
+      - POLYGON_BUCKET_NAME=flatfiles
+    command: [
+      "uvicorn",
+      "app.microservices.polygon_flatfiles_service.polygon_flatfiles:app",
+      "--host", "0.0.0.0",
+      "--port", "8002",
+      "--reload"
+    ]
+    depends_on:
+      - kafka
+    ports:
+      - "8089:8002"
+    networks:
+      - app_network
+
 
 volumes:
   stock_data:

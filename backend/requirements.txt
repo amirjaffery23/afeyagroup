@@ -15,3 +15,4 @@ finnhub-python
 httpx
 python-dotenv
 asyncpg
+boto3==1.26.0

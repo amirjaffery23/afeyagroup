@@ -13,6 +13,16 @@ import asyncio
 from app.routes import stock_router, user_router
 from app.db import get_db
 
+#
+# 1. Import your Polygon microservice FastAPI instance (sub-application)
+#    from the location where you created `app/microservices/polygon_flatfiles_service/app.py`.
+#
+# Example:
+# from app.microservices.polygon_flatfiles_service.app import app as polygon_flatfiles_app
+#
+
+from app.microservices.polygon_flatfiles_service.polygon_flatfiles import app as polygon_flatfiles_app
+
 app = FastAPI(
     title="Stock Portfolio API",
     description="A REST API for fetching, storing, and managing stock data.",
@@ -141,3 +151,9 @@ async def publish_stock_data(symbol: str, db: Session = Depends(get_db)):
 # Attach routers
 app.include_router(stock_router, prefix="/api", tags=["stocks"])
 app.include_router(user_router, prefix="/api", tags=["users"])
+
+#
+# 2. Mount the Polygon Flat Files microservice under a sub-path, e.g. "/polygon-files"
+#    This allows you to access its endpoints at /polygon-files/list-files, etc.
+#
+app.mount("/polygon-files", polygon_flatfiles_app)
