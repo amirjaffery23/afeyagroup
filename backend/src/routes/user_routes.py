@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.db import get_db  # Import the `get_db` function
-from app.models import User  # Import the User model
-from app.schemas.user import UserCreate, UserResponse  # Import schemas
+from core.db import get_db  # Import the `get_db` function
+from models.models import User  # Import the User model
+from schemas.user import UserCreate, UserResponse  # Import schemas
 from typing import List
 from passlib.hash import bcrypt
 

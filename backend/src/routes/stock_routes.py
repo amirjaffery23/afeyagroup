@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from app.db import get_db
-from app.models import Stock
-from app.schemas.stock import StockCreate, StockUpdate, StockResponse
+from core.db import get_db
+from models.models import Stock
+from schemas.stock import StockCreate, StockUpdate, StockResponse
 from datetime import datetime
 
 stock_router = APIRouter()

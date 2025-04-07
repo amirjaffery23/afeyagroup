@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Date, Numeric, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column
-from app.db import Base
+from core.db import Base
 from passlib.hash import bcrypt
 from pydantic import BaseModel, EmailStr
 

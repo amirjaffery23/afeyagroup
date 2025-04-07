@@ -1,12 +1,13 @@
 fastapi
-uvicorn==0.22.0
+uvicorn>=0.22.0
+websockets<12.0
 psycopg2-binary
 sqlalchemy
-pydantic
+pydantic>=2.5
+pydantic-settings>=2.0
 passlib
 email-validator
 confluent-kafka==1.9.2
-websockets
 kafka-python
 redis>=4.3.0
 fastapi-limiter

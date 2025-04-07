@@ -1,9 +1,10 @@
-# version: "3.8"
+# version: "3.9"
 
 services:
   postgres:
     image: postgres:16
     container_name: postgres
+    restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
@@ -15,6 +16,16 @@ services:
       - ./database/docker-entrypoint-initdb.d/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.75'
+          memory: 512M
 
   redis:
     image: redis:latest
@@ -24,24 +35,48 @@ services:
       - "6379:6379"
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
-  nginx:
-    image: nginx:latest
-    container_name: nginx
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: kafka
+    environment:
+      KAFKA_KRAFT_MODE: "yes"
+      KAFKA_CFG_NODE_ID: "1"
+      KAFKA_CFG_PROCESS_ROLES: "broker,controller"
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
     ports:
-      - "80:80"
-      - "443:443"
+      - "9092:9092"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - backend
+      - kafka-data:/bitnami/kafka
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
 
   backend:
     build:
       context: ./backend
     container_name: backend
+    restart: always
     env_file:
       - .env
     ports:
@@ -51,141 +86,156 @@ services:
       - redis
     networks:
       - app_network
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+    profiles: ["prod", "dev"]
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-fsSL", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   frontend:
     build:
       context: ./frontend
     container_name: frontend
+    restart: always
     ports:
       - "3000:80"
     environment:
       VITE_BACKEND_URL: http://backend:8000
     depends_on:
-      - backend
-    networks:
-      - app_network
-
-  zookeeper:
-    image: bitnami/zookeeper:latest
-    container_name: zookeeper
-    environment:
-      ALLOW_ANONYMOUS_LOGIN: "yes"
-    ports:
-      - "2181:2181"
-    networks:
-      - app_network
-    healthcheck:
-      test: ["CMD", "zkServer.sh", "status"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  kafka:
-    image: bitnami/kafka:latest
-    container_name: kafka
-    depends_on:
-      zookeeper:
+      backend:
         condition: service_healthy
-    environment:
-      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CFG_BROKER_ID: 1
-      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092
-      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
-      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      ALLOW_PLAINTEXT_LISTENER: "yes"
-    ports:
-      - "9092:9092"
     networks:
       - app_network
-    healthcheck:
-      test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
+    profiles: ["prod", "dev"]
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app_network
+    profiles: ["prod"]
 
   websockets_server:
     build:
       context: ./backend
-      dockerfile: Dockerfile
     container_name: websockets_server
+    restart: always
     environment:
-      - RUN_WEBSOCKETS=true
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-    command: ["uvicorn", "websockets_server:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
+    command: ["python", "-m", "ws_server.server"]
     ports:
       - "8080:8001"
     depends_on:
       kafka:
         condition: service_healthy
-      backend:
-        condition: service_started
     networks:
       - app_network
+    profiles: ["prod", "dev"]
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   finnhub_producer:
     build:
       context: ./backend
     container_name: finnhub_producer
-    volumes:
-      - ./backend/app:/app
+    restart: always
     environment:
-      - RUN_FINNHUB_PRODUCER=true
       - FINNHUB_API_KEY=${FINNHUB_API_KEY}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-    command: ["python", "/app/microservices/finnhub_service/finnhub_producer.py"]
+    command: ["python", "-m", "services.finnhub_service.finnhub_producer"]
     depends_on:
       kafka:
         condition: service_healthy
     networks:
       - app_network
+    profiles: ["prod", "dev"]
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   polygon_stocks_api:
     build:
       context: ./backend
     container_name: polygon_stocks_api
-    volumes:
-      - ./backend/app:/app
+    restart: always
+    env_file:
+      - .env
     environment:
-      - RUN_POLYGON_API=true
       - POLYGON_API_KEY=${POLYGON_API_KEY}
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-    command: ["python", "/app/microservices/polygon_stocks_service/polygon_stocks_api.py"]
+    command: ["uvicorn", "services.polygon_stocks_service.polygon_stocks_api:app", "--host=0.0.0.0", "--port=8080"]
+    ports:
+      - "8088:8080"
     depends_on:
       kafka:
         condition: service_healthy
-    ports:
-      - "8088:8080"
     networks:
       - app_network
+    profiles: ["prod", "dev"]
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
   polygon_flatfiles_service:
     build:
       context: ./backend
     container_name: polygon_flatfiles_service
-    volumes:
-      - ./backend/app:/app/app
+    restart: always
     environment:
-      - RUN_POLYGON_FLATFILES=true
       - POLYGON_ACCESS_KEY_ID=${POLYGON_ACCESS_KEY_ID}
       - POLYGON_SECRET_ACCESS_KEY=${POLYGON_SECRET_ACCESS_KEY}
       - POLYGON_S3_ENDPOINT=https://files.polygon.io
       - POLYGON_BUCKET_NAME=flatfiles
     command: [
       "uvicorn",
-      "app.microservices.polygon_flatfiles_service.polygon_flatfiles:app",
+      "services.polygon_flatfiles_service.polygon_flatfiles:app",
       "--host", "0.0.0.0",
-      "--port", "8002",
-      "--reload"
+      "--port", "8002"
     ]
-    depends_on:
-      - kafka
     ports:
       - "8089:8002"
+    depends_on:
+      kafka:
+        condition: service_healthy
     networks:
       - app_network
-
+    profiles: ["prod", "dev"]
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
 volumes:
   stock_data:
@@ -193,5 +243,4 @@ volumes:
 
 networks:
   app_network:
-    name: app_network
     driver: bridge

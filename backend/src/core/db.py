@@ -1,16 +1,13 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-import os
+from core.config import PolygonStocksSettings
 
-# Database connection details from environment variables or defaults
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = os.getenv("DB_PORT", "5432")
-DB_USER = os.getenv("DB_USER", "postgres")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
-DB_NAME = os.getenv("DB_NAME", "stock_db")
+settings = PolygonStocksSettings()
 
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-print('db_url=', DATABASE_URL)
+# Use DATABASE_URL directly from settings
+DATABASE_URL = settings.DATABASE_URL
+
+print('db_url =', DATABASE_URL)  # Optional: You may remove this in production
 
 # SQLAlchemy engine and session setup
 engine = create_engine(DATABASE_URL)
