@@ -37,7 +37,10 @@ app = FastAPI(
 # -------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://192.168.1.59:3000",  # Your VM's IP
+        "http://stock.local:3000",   # If you mapped a custom name],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
