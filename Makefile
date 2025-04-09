@@ -35,6 +35,8 @@ clean:
 	docker-compose --env-file .env.$(ENV) down --remove-orphans || true
 	docker rm -f $$(docker ps -aq) || true
 	docker network prune -f
-#	docker volume prune -f
-#	docker system prune -a --volumes -f
+	
+clean_volumes:
+	docker volume ls -qf dangling=true | grep -v afeyagroup_stock_data | xargs -r docker volume rm
+
 
